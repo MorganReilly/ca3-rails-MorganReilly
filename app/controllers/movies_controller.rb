@@ -16,11 +16,26 @@ class MoviesController < ApplicationController
     # Check some or all, can't be none checked
     @selected_ratings = (params[:ratings] || Hash[@all_ratings.product([1])]).keys
 
+    ensure_session_consistency
+    ensure_params_consistency
+
     # CSS highlighting on titles
     @header_classes = {'title': '', 'release_date': ''}
     @header_classes[params[:sort]] = 'hilite'   
 
     @movies = Movie.where(rating: @selected_ratings).order(params[:sort])
+  end
+
+  def ensure_session_consistency
+    # Session cookie implementation for ratings and sort
+    session[:ratings] = params[:ratings] if params[:ratings] and (session[:ratings].nil? or (session[:rating] != params[:ratings]))
+    session[:sort] = params[:sort] if params[:sort] and (session[:sort].nil? or (session[:sort] != params[:sort]))
+  end
+  
+  def ensure_params_consistency
+    return unless (session[:ratings] and params[:ratings].nil?) or (session[:sort] and params[:sort].nil?)
+    # http redirect
+    redirect_to movies_path(ratings: session[:ratings], sort: session[:sort]) and return
   end
 
   def new
